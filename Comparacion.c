@@ -5,6 +5,8 @@
 #include <time.h>
 #include "metodosOrdenamiento.h"
 
+// Estructuras para manejar datos entre hilos
+
 typedef struct Datos{
     int* arrBurbuja;
     int* arrQuickSort;
@@ -32,15 +34,20 @@ typedef struct Tiempos{
     CRITICAL_SECTION csPorcentajes; // Para sincronización de porcentajes
 } Tiempos;
 
-void menu();
+
+void menu(int n);
 int* crearArreglo(int tamano);
 void hilos(Datos* datos);
+double calcularTiempo(clock_t inicio, clock_t fin);
+
+
+//--- Hilos de ordenamiento ---
 DWORD WINAPI burbujaHilo(LPVOID param);
 DWORD WINAPI quickSortHilo(LPVOID param);
 DWORD WINAPI shellSortHilo(LPVOID param);
 DWORD WINAPI rudixHilo(LPVOID param);
 DWORD WINAPI imprimirHilo(LPVOID param);
-double calcularTiempo(clock_t inicio, clock_t fin);
+
 
 // Estructura para pasar datos a cada hilo
 typedef struct HiloParam {
@@ -49,6 +56,8 @@ typedef struct HiloParam {
     volatile double* tiempoResultado;
 } HiloParam;
 
+
+//--- inicio del programa y menu inicial ---
 int main() {
     while(1){
         system("cls");
@@ -76,10 +85,13 @@ int main() {
     return 0;
 }
 
+
+//--- Resultados del menu ---
 void menu(int n) {
     printf("Generando arreglo de %d elementos...\n", n);
     
     int* numeros = crearArreglo(n);
+    // --- Crear copias para cada metodo de ordenamiento ---
     int* copiaBurbuja = malloc(n * sizeof(int));
     int* copiaQuickSort = malloc(n * sizeof(int));
     int* copiaShellSort = malloc(n * sizeof(int));
@@ -90,17 +102,20 @@ void menu(int n) {
         return;
     }
     
+    // --- Copiar los datos a cada arreglo ---
     memcpy(copiaBurbuja, numeros, n * sizeof(int));
     memcpy(copiaQuickSort, numeros, n * sizeof(int));
     memcpy(copiaShellSort, numeros, n * sizeof(int));
     memcpy(copiaRudix, numeros, n * sizeof(int));
     
+    // --- Preparar datos para hilos ---
     Datos datos = {copiaBurbuja, copiaQuickSort, copiaShellSort, copiaRudix, n};
     
     printf("Arreglo generado. Iniciando ordenamiento...\n\n");
 
     hilos(&datos);
 
+    //--- Liberar memoria ---
     free(numeros);
     free(copiaBurbuja);
     free(copiaQuickSort);
@@ -111,18 +126,16 @@ void menu(int n) {
 int* crearArreglo(int tamano){
     srand(time(NULL));
     int *nuevoArreglo = (int*) malloc(tamano * sizeof(int));
-
     if(nuevoArreglo == NULL){
         return NULL;
     }
-
     for(int i = 0; i < tamano; i++){
         nuevoArreglo[i] = 1 + rand() % 100000;
     }
-
     return nuevoArreglo;
 }
 
+//--- Metodo principal de manejo de hilos ---
 void hilos(Datos* datos){
     // Inicializar estructura de tiempos
     Tiempos tiempos;
@@ -180,6 +193,7 @@ void hilos(Datos* datos){
     printf("RadixSort: %.4f segundos\n", tiempos.rudixTiempo);
 }
 
+//--- Hilos de ordenamiento ---//
 DWORD WINAPI burbujaHilo(LPVOID param){
     HiloParam* p = (HiloParam*)param;
     clock_t inicio = p->tiempos->inicio;
@@ -266,6 +280,7 @@ void dibujarBarraProgreso(double porcentaje, int ancho) {
     printf("] %.1f%%", porcentaje);
 }
 
+// --- Hilo de impresion del proceso ---//
 DWORD WINAPI imprimirHilo(LPVOID param){
     Tiempos* tiempos = (Tiempos*)param;
     clock_t inicio = tiempos->inicio;
