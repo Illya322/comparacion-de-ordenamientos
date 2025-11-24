@@ -76,7 +76,7 @@ int partition(int arr[], int low, int high) {
     int i = low - 1;
     
     for (int j = low; j < high; j++) {
-        if (arr[j] <= pivot) {
+        if (arr[j] < pivot) {
             i++;
             swap(&arr[i], &arr[j]);
         }
@@ -97,16 +97,15 @@ void quicksortRecursivo(int arr[], int low, int high, QuickSortProgreso* progres
     if (low < high) {
         int pi = partition(arr, low, high);
         
-        // Actualizar progreso
         if(progreso != NULL && progreso->tiempos != NULL) {
-            (*(progreso->elementosProcesados)) += (high - low + 1);
             progreso->contador++;
             
-            // Actualizar cada 10 particiones para reducir overhead
-            if(progreso->contador % 10 == 0) {
-                double porcentaje = ((double)(*(progreso->elementosProcesados)) / progreso->totalElementos) * 100.0;
+            // Aproximación simple: cada partición es progreso
+            // Total de particiones ≈ 2*n (en árbol balanceado)
+            double porcentaje = ((double)progreso->contador / (progreso->totalElementos * 2)) * 100.0;
                 if(porcentaje > 100.0) porcentaje = 100.0;
                 
+            if(progreso->contador % 10 == 0) {
                 EnterCriticalSection(&progreso->tiempos->csPorcentajes);
                 progreso->tiempos->porcentajes.quickSort = porcentaje;
                 LeaveCriticalSection(&progreso->tiempos->csPorcentajes);
